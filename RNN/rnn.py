@@ -28,7 +28,7 @@ class RNN(L.LightningModule):
     def forward(self, input, hidden):
         combined = torch.cat((input, hidden), 1)
         hidden = self.input_to_hidden(combined)
-        output = self.sigmoid(self.hidden_to_pred(hidden))
+        output = self.hidden_to_pred(hidden)
 
         return output, hidden
 
