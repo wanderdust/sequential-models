@@ -28,10 +28,10 @@ class MySimpleDataset(Dataset):
             dataset.append({"text": self._generate_random_number(), "label": 1})
         return dataset
 
-    def _generate_random_string(self, length=1):
+    def _generate_random_string(self, length=5):
         return ''.join(random.choices(string.ascii_lowercase, k=length))
 
-    def _generate_random_number(self, length=1):
+    def _generate_random_number(self, length=5):
         return ''.join(random.choices(string.digits, k=length))
 
     def __len__(self):
