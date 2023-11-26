@@ -2,6 +2,7 @@ import string
 
 import torch
 from datasets import load_dataset
+from simple_dataset import MySimpleDataset
 from torch.utils.data import Dataset
 
 """
@@ -10,7 +11,7 @@ Class Generated using ChatGPT
 
 
 class IMDBDataset(Dataset):
-    def __init__(self, split):
+    def __init__(self, split, max_sequence_length=500, debug=False):
         """
         Initializes the dataset by loading the IMDB data and preprocessing it.
         :param split: 'train' or 'test'
@@ -19,10 +20,13 @@ class IMDBDataset(Dataset):
         self.labels = []
         self.char_set = string.ascii_letters + string.digits + string.punctuation + ' '
         self.char_map = {char: i for i, char in enumerate(self.char_set)}
-        self.max_len = 100  # Maximum length of a sequence
+        self.max_len = max_sequence_length
 
-        imdb_dataset = load_dataset("imdb")
-        for sample in imdb_dataset[split]:
+        imdb_dataset = load_dataset("imdb")[split]
+        if debug:
+            imdb_dataset = MySimpleDataset(split=split, size=500)
+
+        for sample in imdb_dataset:
             self.data.append(self.one_hot_encode(self.pad(sample['text'])))
             self.labels.append(sample['label'])
 
