@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from dataset import IMDBDataset
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torch.utils.data import DataLoader
 from torchmetrics.classification import BinaryAccuracy
 
@@ -51,9 +52,12 @@ class RNN(L.LightningModule):
         predictions = (output > 0.5).float().squeeze()
 
         self.train_accuracy(predictions, target)
-        self.log('train_acc', self.train_accuracy, prog_bar=True, on_step=True)
+        loss = self.criterion(output.squeeze(), target.float())
 
-        return self.criterion(output.squeeze(), target.float())
+        self.log('train_acc', self.train_accuracy, prog_bar=True, on_step=True)
+        self.log('train_loss', loss, prog_bar=True, on_step=True)
+
+        return loss
 
     def test_step(self, test_batch):
         x, target = test_batch
@@ -71,25 +75,24 @@ class RNN(L.LightningModule):
         predictions = (output > 0.5).float().squeeze()
         correct = (predictions == target).sum()
 
-        # Log test loss and accuracy
         self.log('test_accuracy', correct.float() / target.size(0))
 
     def configure_optimizers(self):
-        return optim.SGD(self.parameters(), lr=0.01)
+        return optim.Adam(self.parameters(), lr=0.01)
 
 
 if __name__ == "__main__":
     batch_size = 32
 
-    dataset_train = IMDBDataset(split="train")
+    dataset_train = IMDBDataset(split="train", debug=False)
     train_loader = DataLoader(dataset_train, batch_size=batch_size, shuffle=True)
 
     vocab_size = len(dataset_train.char_set)
     model = RNN(hidden_size=128, input_size=vocab_size, output_size=1)
 
-    trainer = L.Trainer(accelerator='cpu', max_epochs=6)
+    trainer = L.Trainer(accelerator='cpu', max_epochs=50, callbacks=[EarlyStopping(monitor="train_loss", mode="min", patience=10)])
     trainer.fit(model=model, train_dataloaders=train_loader)
 
-    dataset_test = IMDBDataset(split="test")
+    dataset_test = IMDBDataset(split="test", debug=False)
     test_loader = DataLoader(dataset_test, batch_size=batch_size, shuffle=False)
     trainer.test(ckpt_path='best', dataloaders=test_loader)
